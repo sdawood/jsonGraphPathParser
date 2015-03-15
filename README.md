@@ -31,7 +31,33 @@ When I showed the same code examples using the JavaScript path syntax syntax, de
 
 ## JSON Graph Path Syntax
 
-JSON Graph Path Syntax allows developers to specify Falcor paths using the familiar JavaScript style. PathSets are also supported. PathSets allow multiple paths can be specified in one expression by specifying 0 or more keys or ranges inside of an indexer.
+JSON Graph Path Syntax allows developers to specify Falcor paths using the familiar JavaScript style. 
+
+```JavaScript
+model.getValue(["genreLists", 0, 0, "name"]);
+```
+
+**PathSet**s are also supported. PathSets allow multiple paths can be specified in one expression.  Indexers in PathSet syntax expressions may contain multiple ranges or keys.
+
+As an example the following PathSet...
+```JavaScript
+genreLists[0..1][0...2, 5]['name', 'rating']
+```
+...contains the following paths:
+```JavaScript
+genreLists[0][0].name
+genreLists[0][0].rating
+genreLists[0][1].name
+genreLists[0][1].rating
+genreLists[0][5].name
+genreLists[0][5].rating
+genreLists[1][0].name
+genreLists[1][0].rating
+genreLists[1][1].name
+genreLists[1][1].rating
+genreLists[1][5].name
+genreLists[1][5].rating
+````
 
 ### Unit Tests
 
