@@ -1,6 +1,8 @@
 # JSON Graph Path Syntax Parser
 
-Falcor natively expresses path requests against the virtual JSON graph on the server as an array of keys.
+Falcor lets you represent all of your cloud data sources as one Virtual JSON Model on the server. On the client Falcor makes it appear as if the entire JSON model is available locally. Falcor retrieves any model data you request from the cloud on-demand, transparently handling all the network communication and keeping the server and client in sync.
+
+Falcor allows developers to retrieve data from JSON Model on the server using **Paths**. Falcor natively expresses Paths as an array of keys.
 
 ```JavaScript
 model.getValue(["genreLists", 0, 0, "name"]).then(name => console.log(name)); // Prints "Die Hard"
