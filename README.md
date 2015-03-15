@@ -68,7 +68,7 @@ model.
 // prints "US" eventually
 ```
 
-Identifier names must be valid ES5 identifier names (see https://mathiasbynens.be/notes/javascript-identifiers for details). Values (null, false, true, undefined) are valid inside of indexers and should not be coerced to strings.
+Identifiers must be valid ES5 identifiers (see https://mathiasbynens.be/notes/javascript-identifiers for details). Values (null, false, true, undefined) are valid inside of indexers and should not be coerced to strings. All numbers must be valid JSON numbers. Values like null, true, false, and undefined can all be included in indexers and should not be converted to strings.
 
 ## Falcor PathSets
 
@@ -148,5 +148,7 @@ gulp
 ```
 
 Have a look at the unit tests (test/index.js), make them pass, and submit a pull request.
+
+My recommendation is that you borrow identifier parse code and the JS string parse code from Esprima, and the JSON number parse code from a JSON parsing library. That should get you off the ground very quickly. Whereever possible we want to  minimize download size as well as maximize speed.
 
 Thanks!
