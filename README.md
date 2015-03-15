@@ -25,23 +25,23 @@ Using an Arrays of keys to express a Path is straightforward. However when I gav
 ```JavaScript
 model.getValue("genreLists[0][0].name").then(name => console.log(name)); // Prints "Die Hard"
 ```
-When I showed the same code examples using the JavaScript path syntax syntax, developers immediately understood one of the core ideas behind Falcor: **access your JSON data the same way everywhere, no matter whether it is.**
-
-**Want to help out with Falcor. This your chance!** We are currently driving hard to our release and we're looking for a little help writing the parser for this simple path syntax.  We are hoping to have an early preview of some Falcor development tools sometime next week, and this feature is one of the outstanding tasks. Just fork, implement the parse method, run the unit tests, and if they pass, submit a pull request!
+When I showed the same code examples using the JavaScript path syntax syntax, developers immediately understood one of the core ideas behind Falcor: **One Model Everywhere.**  Falcor allows you to access your application's JSON model the same way, regardless of whether the data is in the cloud or in-memory on the client.
 
 ## JSON Graph Path Syntax
 
 JSON Graph Path Syntax allows developers to specify Falcor paths using the familiar JavaScript style. 
 
 ```JavaScript
-model.getValue(["genreLists", 0, 0, "name"]);
+model.getValue('genreLists[0][0].name');
 ```
 
 **PathSet**s are also supported. PathSets allow multiple paths can be specified in one expression.  Indexers in PathSet syntax expressions may contain multiple ranges or keys.
 
 As an example the following PathSet...
 ```JavaScript
-genreLists[0..1][0...2, 5]['name', 'rating']
+// note the first range (0..1) is inclusive because it has two '.' characters.
+// the second range is (0...2) is exclusive because it has three '.' characters.
+genreLists[0..1][0...2, 5]['name', 'rating'] 
 ```
 ...contains the following paths:
 ```JavaScript
@@ -58,69 +58,29 @@ genreLists[1][1].rating
 genreLists[1][5].name
 genreLists[1][5].rating
 ````
+The Path Syntax is parsed into a Path object, and the PathSet Syntax is parsed into a PathSet object. 
 
-### Unit Tests
+The following PathSet syntax...
+
+### Getting Started
+
+**Want to help out with Falcor? This your chance!** We are currently driving hard to our release and we're looking for a little help writing the parser for this simple path syntax.  We are hoping to have an early preview of some Falcor development tools sometime next week, and this feature is one of the outstanding tasks. 
+
+Fork the repo and have a look at index.js. At the moment it looks like this:
 
 ```JavaScript
-
-var parse = function(pathSyntax) {
-  var path = [];
-  // your code goes here
-  return path;
+function parse(path) {
+  throw "Not Implemented.";
 }
 
-parse("genreLists[0][0].name") 
-// returns["genreLists", 0, 0, "name"]
-
-parse("['genreLists'][0][0].name") 
-// returns ["genreLists", 0, 0, "name"]
-
-parse('["genreLists"][0][0]["name"]'])
-// returns ["genreLists", 0, 0, "name"]
-
-// escaped quotes must be supported in strings
-parse('["genre\"Lists"][0][0]["name"]'])
-// returns ['genre"Lists', 0, 0, "name"]
-
-parse("genreLists[0..1][0..1].name")
-// returns ["genreLists", {from: 0, to: 1}, {from:0, to:1}, "name"]
-
-parse("genreLists[0...3][0...3].name")
-// returns ["genreLists", {from: 0, to: 2}, {from:0, to:2}, "name"]
-
-// note that null is a valid key and is _not_ coerced into a string
-parse("genreLists[null]")
-// returns ["genreLists", null] 
-
-parse("genreLists[0...3, 1][0...3, 5, 6..9].name")
-// returns ["genreLists", [{from: 0, to: 2}, 1], [{from:0, to:2}, 5, {from:6, to: 9}], "name"]
-
-parse("genreLists[0...3, 1][0...3, 5, 6..9].name")
-// returns ["genreLists", [{from: 0, to: 2}, 1], [{from:0, to:2}, 5, {from:6, to: 9}], "name"]
-
-parse("genreLists[0...3, 1][0...3, 5, 6..9]['name', 'rating']")
-// returns ["genreLists", [{from: 0, to: 2}, 1], [{from:0, to:2}, 5, {from:6, to: 9}], ["name","rating"]]
-
-parse("genreLists[-1...3, 1][0...3, 5, 6..9]['name', 'rating']")
-// returns ["genreLists", [{from: -1, to: 2}, 1], [{from:0, to:2}, 5, {from:6, to: 9}], ["name","rating"]]
-
-// ranges _can_ have from values that are larger than 'to' values. Although this _is_ invalid, it's not the parser's job to enforce this.
-parse("genreLists[3...2]['name']")
-// returns ["genreLists", {from: 3, to: 2}, "name"]
-
-// arrays are not allowed inside of indexers
-parse("genreLists[0...3, [1,2]][0...3, 5, 5..9]['name', 'rating']")
-// throw "Unexpected token '[' found in indexer."
-
-// ranges can only contain integers
-parse("genreLists[0...3.2][0...3, 5, 5..9]['name', 'rating']")
-// throw "Unexpected float found in range '3.2'"
-
-// indentifiers cannot appear in indexers (outside of quotes)
-parse("genreLists[hello][0].name")
-// throw "Unexpected token found in range 'h'."
-
-// ranges can only contain integers
-parse("genreLists[0...'hello'][0...3, 5, 5..9]['name', 'rating']")
-// throw "Unexpected token found in range 'h'"
+module.exports = parse;
 ```
+
+Then run the unit tests with gulp.
+```
+gulp
+```
+
+Have a look at the unit tests (test/index.js), make them pass, and submit a pull request.
+
+Thanks!
