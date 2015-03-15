@@ -128,11 +128,11 @@ var path = parse("genreLists[0..1][0...1, 5]['name', 'rating']")
 
 The ranges with two '.' are inclusive. That means 0..2 translates to {from: 0, to:2}. The ranges with three '.' are exclusive. They should be translated to {from: 0, length: to-from}. For example 0...3 becomes {from:0, length: 2}. PathSets also allow multiple keys to be placed inside of indexers as in the example above (["name", "rating"]).
 
-### Getting Started
+### Help out with Falcor!
 
 **Want to help out with Falcor? This your chance!** We are currently driving hard to our release and we're looking for a little help writing the parser for this simple path syntax.  We are hoping to have an early preview of some Falcor development tools sometime next week, and this feature is one of the outstanding tasks. 
 
-Fork the repo and have a look at index.js. At the moment it looks like this:
+Fork the repo and have a look at ./index.js. At the moment it looks like this:
 
 ```JavaScript
 function parse(path) {
