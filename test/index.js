@@ -68,17 +68,17 @@ describe("#parse", function() {
 
     it('Should parse indexers containing both ranges and keys', function() {
         var path = parse("genreLists[0...3, 1][0...3, 5, 6..9].name")
-        pathsEqual(path, ["genreLists", [{from: 0, length: 3-0}, 1], [{from:0, length:3-1}, 5, {from:6, to: 9}], "name"]);
+        pathsEqual(path, ["genreLists", [{from: 0, length: 3-0}, 1], [{from:0, length:3-0}, 5, {from:6, to: 9}], "name"]);
     });     
 
     it('Should parse path with only indexers, where some indexers contain both ranges and keys', function() {
         var path = parse("['genreLists'][0...3, 1][0...3, 5, 6..9]['name']")
-        pathsEqual(path, ["genreLists", [{from: 0, length: 3-0}, 1], [{from:0, length:3-1}, 5, {from:6, to: 9}], "name"]);
+        pathsEqual(path, ["genreLists", [{from: 0, length: 3-0}, 1], [{from:0, length:3-0}, 5, {from:6, to: 9}], "name"]);
     });     
 
     it('Should parse path with only indexers, where some indexers contain both ranges and keys and some contain only keys', function() {
         var path = parse("['genreLists'][0...3, 1][0...3, 5, 6..9]['name', 'rating']")
-        pathsEqual(path, ["genreLists", [{from: 0, length: 3-0}, 1], [{from:0, length:3-1}, 5, {from:6, to: 9}], ["name", "rating"]]);
+        pathsEqual(path, ["genreLists", [{from: 0, length: 3-0}, 1], [{from:0, length:3-0}, 5, {from:6, to: 9}], ["name", "rating"]]);
     });     
 
     it('Ranges can have smaller "to" values than "from" values. Technically this is illegal, but it is not the parser\'s job to enforce this restriction.', function() {
@@ -92,11 +92,6 @@ describe("#parse", function() {
 });
 
 /*
-
-
-// ranges _can_ have from values that are larger than 'to' values. Although this _is_ invalid, it's not the parser's job to enforce this.
-parse("genreLists[3...2]['name']")
-// returns ["genreLists", {from: 3, to: 2}, "name"]
 
 // arrays are not allowed inside of indexers
 parse("genreLists[0...3, [1,2]][0...3, 5, 5..9]['name', 'rating']")
