@@ -1,5 +1,6 @@
 var parse = require('../index.js');
-var assert = require('chai').assert
+var assert = require('chai').assert;
+var expect = require('chai').expect;
 
 function pathsEqual(leftPath, rightPath) {
     assert.equal(JSON.stringify(leftPath), JSON.stringify(rightPath));
