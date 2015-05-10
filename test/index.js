@@ -69,7 +69,7 @@ describe("#parse", function() {
 
     it('Should parse null, true, false, and undefined keys and should not coerce it into a string', function() {
         var path = parse("genreLists[null][true][false][undefined]");
-        pathsEqual(path, ["genreLists", null, true, undefined]);
+        pathsEqual(path, ["genreLists", null, true, false, undefined]);
     });     
 
     it('Null should _not_ be a valid identifier', function() {

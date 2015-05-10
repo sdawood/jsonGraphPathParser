@@ -14,8 +14,5 @@
  * permissions and limitations under the License.
  */
 
-function parse(path) {
-  throw "Not Implemented.";
-}
-
+var parse = require('./lib/parser');
 module.exports = parse;
