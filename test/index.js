@@ -1,14 +1,28 @@
 var util = require('util');
-var parse = require('../index.js');
+var _parse = require('../index.js');
 var assert = require('chai').assert;
 var expect = require('chai').expect;
 var jp = require('jsonpath');
 
+function parse(falcorPathString) {
+  return {
+    original: falcorPathString,
+    ast: function() {
+      var ast = _parse(falcorPathString);
+      if (ast.error) {
+        throw Error(ast.error.message);
+      }
+      return ast;
+    }()
+  }
+}
+
 function pathsEqual(leftPath, rightPath) {
-    assert.equal(JSON.stringify(falcorPath(leftPath)), JSON.stringify(rightPath));
-    var jsonpath = jp.parser.parse(jp.stringify(rightPath));
+    assert.equal(JSON.stringify(falcorPath(leftPath.ast)), JSON.stringify(rightPath));
+    var original = (leftPath.original.charAt(0) == "[") ? '$' + leftPath.original : leftPath.original; //jsonpath doesn't allow leading subscript
+    var jsonpath = jp.parser.parse(jp.stringify(original));
     jsonpath.shift();
-    assert.deepEqual(jsonpathAST(leftPath), jsonpath);
+    assert.deepEqual(jsonpathAST(leftPath.ast), jsonpath);
 }
 
 function jsonpathAST(falcorpathPlus) {
@@ -18,18 +32,12 @@ function jsonpathAST(falcorpathPlus) {
 }
 
 function falcorPath(falcorpathPlus) {
-  console.log();
   var path = [];
   falcorpathPlus.ast.walk(function(node, depth, parent, when) { if(parent) path.push(node.A.expression.value);});
   return path;
 }
 
 describe("#parse", function() {
-    it('should parse JavaScript paths that combine identifier names', function() {
-        var path = parse("genreLists.titles.length");
-        pathsEqual(path, ["genreLists", "titles", "length"]);
-    });
-
     it('should parse JavaScript paths that combine identifier names and indexers', function() {
         var path = parse("genreLists[0][0].name");
         pathsEqual(path, ["genreLists", 0, 0, "name"]);
