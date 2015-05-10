@@ -1,12 +1,35 @@
+var util = require('util');
 var parse = require('../index.js');
 var assert = require('chai').assert;
 var expect = require('chai').expect;
+var jp = require('jsonpath');
 
 function pathsEqual(leftPath, rightPath) {
-    assert.equal(JSON.stringify(leftPath), JSON.stringify(rightPath));
+    assert.equal(JSON.stringify(falcorPath(leftPath)), JSON.stringify(rightPath));
+    var jsonpath = jp.parser.parse(jp.stringify(rightPath));
+    jsonpath.shift();
+    assert.deepEqual(jsonpathAST(leftPath), jsonpath);
+}
+
+function jsonpathAST(falcorpathPlus) {
+  var ast = [];
+  falcorpathPlus.ast.walk(function(node, depth, parent, when) { if(parent) ast.push(node.A);});
+  return ast;
+}
+
+function falcorPath(falcorpathPlus) {
+  console.log();
+  var path = [];
+  falcorpathPlus.ast.walk(function(node, depth, parent, when) { if(parent) path.push(node.A.expression.value);});
+  return path;
 }
 
 describe("#parse", function() {
+    it('should parse JavaScript paths that combine identifier names', function() {
+        var path = parse("genreLists.titles.length");
+        pathsEqual(path, ["genreLists", "titles", "length"]);
+    });
+
     it('should parse JavaScript paths that combine identifier names and indexers', function() {
         var path = parse("genreLists[0][0].name");
         pathsEqual(path, ["genreLists", 0, 0, "name"]);
