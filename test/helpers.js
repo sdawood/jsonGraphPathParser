@@ -15,6 +15,7 @@ function falcorPath(falcorpathPlus) {
 function fixGaps(leftPath, rightPath) {
   var jsonpath_gap_leading_subscript = leftPath.original.charAt(0) ==="[";
   var original = jsonpath_gap_leading_subscript ? '$' + leftPath.original : leftPath.original; //jsonpath doesn't allow leading subscript
+  original = original.replace(/\s*/g, '').replace(/\.\.\./g, "..").replace(/\.\./g, ':')
   var jpAST = jp.parser.parse(original);
   if (jsonpath_gap_leading_subscript) jpAST.shift();
 

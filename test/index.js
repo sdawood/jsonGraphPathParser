@@ -89,7 +89,7 @@ describe("#parse", function() {
 
     it('should parse inclusive and exclusive ranges in indexers. Inclusive ranges should use the "to" field, and exclusive ranges should use the "length" field.', function() {
         var path = parse("genreLists[0..1][0...1].name");
-        pathsEqual(path, ["genreLists", {from: 0, to: 1}, {from:0, length:1-0}, "name"]);
+        pathsEqual(path, ["genreLists", [0, 1].join(':'), [0, 1-0].join(':'), "name"]);
     });     
 
     it('Should parse null, true, false, and undefined keys and should not coerce it into a string', function() {
@@ -117,18 +117,18 @@ describe("#parse", function() {
 
     it('Should parse indexers containing both ranges and keys', function() {
         var path = parse("genreLists[0...3, 1][0...3, 5, 6..9].name")
-        pathsEqual(path, ["genreLists", [{from: 0, length: 3-0}, 1], [{from:0, length:3-0}, 5, {from:6, to: 9}], "name"]);
+        pathsEqual(path, ["genreLists", [[0, 3-0].join(':'), 1], [[0, 3-0].join(':'), 5, [6, 9].join(':')], "name"]);
     });     
 
     it('Should parse path with only indexers, where some indexers contain both ranges and keys', function() {
         var path = parse("['genreLists'][0...3, 1][0...3, 5, 6..9]['name']")
-        pathsEqual(path, ["genreLists", [{from: 0, length: 3-0}, 1], [{from:0, length:3-0}, 5, {from:6, to: 9}], "name"]);
+        pathsEqual(path, ["genreLists", [[0, 3-0].join(':'), 1], [[0, 3-0].join(':'), 5, [6, 9].join(':')], "name"]);
     });     
 
     it('Should parse path with only indexers, where some indexers contain both ranges and keys and some contain only keys', function() {
         var path = parse("['genreLists'][0...3, '1'][0...3, 5, 6..9]['name', 'rating']")
-        pathsEqual(path, ["genreLists", [{from: 0, length: 3-0}, "1"], [{from:0, length:3-0}, 5, {from:6, to: 9}], ["name", "rating"]]);
-    });     
+        pathsEqual(path, ["genreLists", [[0, 3-0].join(':'), "1"], [[0, 3-0].join(':'), 5, [6, 9].join(':')], ["name", "rating"]]);
+    });
 
     ["break", "case", "catch", "continue", "debugger", "default", "delete", "do", "else", "finally", "for", "function", "if", "in", "instanceof", "new", "return", "switch", "this", "throw", "try", "typeof", "var", "void", "while", "with", "class", "const", "enum", "export", "extends", "import", "super"].
         forEach(function(keyword) {
@@ -139,10 +139,12 @@ describe("#parse", function() {
             });    
         });
 
+
     it('Ranges can have smaller "to" values than "from" values. Technically this is illegal, but it is not the parser\'s job to enforce this restriction.', function() {
         var path = parse("genreLists[3...2][3..2]['name']")
-        pathsEqual(path, ["genreLists", {from: 3, length: 2-3}, {from:3, to: 2}, "name"]);
-    });     
+//        pathsEqual(path, ["genreLists", {from: 3, length: 2-3}, {from:3, to: 2}, "name"]);
+        pathsEqual(path, ["genreLists", [3, 2-3].join(':'), [3, 2].join(':'), "name"]);
+    });
 
     it('should reject Arrays inside of indexers', function() {
         expect(function() {
