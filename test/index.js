@@ -48,6 +48,11 @@ describe("#parse", function() {
         pathsEqual(path, ["genreLists", 0, 0, "name"]);
     });
 
+    it('should parse JavaScript paths that combine identifier names, string literal indexers, and string keys', function() {
+        var path = parse("['genreLists']['0']['0'].name");
+        pathsEqual(path, ["genreLists", "0", "0", "name"]);
+    });
+
     it('should parse JavaScript paths that contain only indexers', function() {
         var path = parse('["genreLists"][0][0]["name"]');
         pathsEqual(path, ["genreLists", 0, 0, "name"]);
