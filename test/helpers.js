@@ -1,22 +1,25 @@
+var _ = require('lodash');
 var jp = require('jsonpath');
 
 function jsonpathAST(falcorpathPlus) {
   var ast = [];
-  falcorpathPlus.ast.walk(function(node, depth, parent, when) { if(parent) { ast.push(node.A);} });
+  falcorpathPlus.ast.walk(function(node, depth, parent, when) { if(parent) { ast.push(node.A); } });
   return ast;
 }
 
 function falcorPath(falcorpathPlus) {
-  var path = [];
-  falcorpathPlus.ast.walk(function(node, depth, parent, when) { if(parent) path.push(node.A.expression.value);});
-  return path;
+  var pathsObjects = jsonpathAST(falcorpathPlus);
+//  falcorpathPlus.ast.walk(function(node, depth, parent, when) { if(parent) pathsObjects.push(node.A.expression.value);});
+  var values = jp.query(pathsObjects, '$..value');
+  values = _.filter(values, function(value) { return !_.isObject(value); });
+  return values;
 }
 
 function fixGaps(leftPath, rightPath) {
   var jsonpath_gap_leading_subscript = leftPath.original.charAt(0) ==="[";
   var original = jsonpath_gap_leading_subscript ? '$' + leftPath.original : leftPath.original; //jsonpath doesn't allow leading subscript
   original = original.replace(/\s*/g, '').replace(/\.\.\./g, "..").replace(/\.\./g, ':')
-  var jpAST = jp.parser.parse(original);
+  var jpAST = jp.parse(original);
   if (jsonpath_gap_leading_subscript) jpAST.shift();
 
   /**
@@ -25,7 +28,7 @@ function fixGaps(leftPath, rightPath) {
    * inpuet: '["genre\\"Lists"][0][0].name'
    * jsonpath AST contains: 'genre\\"Lists'
    * falcorpath AST contains: 'genre"Lists'
-   */
+  */
 
   return jpAST.map(function(node) {
     node.expression.value = (typeof node.expression.value === 'string' ? node.expression.value.replace(/\\"/g, '"') : node.expression.value );
