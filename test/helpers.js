@@ -8,11 +8,17 @@ function jsonpathAST(falcorpathPlus) {
 }
 
 function falcorPath(falcorpathPlus) {
-  var pathsObjects = jsonpathAST(falcorpathPlus);
-//  falcorpathPlus.ast.walk(function(node, depth, parent, when) { if(parent) pathsObjects.push(node.A.expression.value);});
-  var values = jp.query(pathsObjects, '$..value');
-  values = _.filter(values, function(value) { return !_.isObject(value); });
-  return values;
+  var ast = jsonpathAST(falcorpathPlus);
+  return ast.map(function(attrs) {
+    var value = attrs.expression.value;
+    /**
+     * subscript expression nesting is not allowed beyond one level in both jsonpath and falcor, a simple one level mapping works here.
+     */
+    if (_.isArray(value)) {
+      return _.map(value, (function(attrs) { return attrs.expression.value; }));
+    }
+    return value
+  });
 }
 
 function fixGaps(leftPath, rightPath) {
