@@ -18,16 +18,29 @@ function parse(falcorPathString) {
 }
 
 function pathsEqual(leftPath, rightPath) {
-    assert.equal(JSON.stringify(falcorPath(leftPath.ast)), JSON.stringify(rightPath));
-    var original = (leftPath.original.charAt(0) == "[") ? '$' + leftPath.original : leftPath.original; //jsonpath doesn't allow leading subscript
-    var jsonpath = jp.parser.parse(jp.stringify(original));
-    jsonpath.shift();
-    assert.deepEqual(jsonpathAST(leftPath.ast), jsonpath);
+    assert.equal( JSON.stringify(falcorPath(leftPath.ast)), JSON.stringify(rightPath));
+    var jsonpath_gap_leading_subscript = leftPath.original.charAt(0) ==="[";
+    var original = jsonpath_gap_leading_subscript ? '$' + leftPath.original : leftPath.original; //jsonpath doesn't allow leading subscript
+    var jpAST = jp.parser.parse(original);
+    if (jsonpath_gap_leading_subscript) jpAST.shift();
+    jpAST.map(function(node) {
+      node.expression.value = (typeof node.expression.value === 'string' ? node.expression.value.replace(/\\"/g, '"') : node.expression.value );
+      node.expression.value = (typeof node.expression.value === 'string' ? node.expression.value.replace(/\\'/g, "'") : node.expression.value );
+      return node;
+    });
+    /**
+     * By design falcor parser is expected to produce escape sequences different from jsonpath parser implementation
+     * jsonpath.parser keeps the double escaped quote as-is inside of a string, while falcor.parser is expected to return a string containing single escaped quote
+     * inpuet: '["genre\\"Lists"][0][0].name'
+     * jsonpath AST contains: 'genre\\"Lists'
+     * falcorpath AST contains: 'genre"Lists'
+    */
+    assert.deepEqual(jsonpathAST(leftPath.ast), jpAST);
 }
 
 function jsonpathAST(falcorpathPlus) {
   var ast = [];
-  falcorpathPlus.ast.walk(function(node, depth, parent, when) { if(parent) ast.push(node.A);});
+  falcorpathPlus.ast.walk(function(node, depth, parent, when) { if(parent) { ast.push(node.A);} });
   return ast;
 }
 
