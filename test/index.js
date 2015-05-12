@@ -5,23 +5,20 @@ var expect = require('chai').expect;
 var jp = require('jsonpath');
 var helpers = require('./helpers')
 
+/**
+ * Test data structure to hold the original path string and the ast
+ */
 function parse(falcorPathString) {
   return {
     original: falcorPathString,
-    ast: function() {
-      var ast = _parse(falcorPathString);
-      if (ast.error) {
-        throw Error(ast.error.message);
-      }
-      return ast;
-    }()
+    ast: _parse(falcorPathString)
   }
 }
 
 function pathsEqual(leftPath, rightPath) {
     assert.equal( JSON.stringify(helpers.falcorPath(leftPath.ast)), JSON.stringify(rightPath));
     var jpAST = helpers.fixGaps(leftPath, rightPath);
-    assert.deepEqual(helpers.jsonpathAST(leftPath.ast), jpAST);
+    assert.deepEqual(leftPath.ast, jpAST);
 }
 
 

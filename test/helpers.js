@@ -8,7 +8,7 @@ function jsonpathAST(falcorpathPlus) {
 }
 
 function falcorPath(falcorpathPlus) {
-  var ast = jsonpathAST(falcorpathPlus);
+  var ast = falcorpathPlus;
   return ast.map(function(attrs) {
     var value = attrs.expression.value;
     /**
