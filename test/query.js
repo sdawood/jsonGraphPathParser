@@ -1,17 +1,18 @@
+var _ = require('lodash');
 var assert = require('chai').assert;
 var expect = require('chai').expect;
-var jp = require('jsonpath');
-
-/** Monkey patch jp replacing parser with falcorpath parser. Leaving handlers and other goodies untouched */
-jp.parser = { parse: require('../lib/parser')};
+var jp = require('../lib/jsonpathplus');
 
 /** Shims for filter and script expressions */
 var aesprim = require('../node_modules/jsonpath/lib/aesprim');
 var _evaluate = require('../node_modules/jsonpath/node_modules/static-eval');
+var slice = require('../node_modules/jsonpath/lib/slice');
+
 function evaluate() {
   try { return _evaluate.apply(this, arguments) }
   catch (e) { }
 }
+
 
 var data = require('./data/store.json');
 
@@ -28,10 +29,24 @@ var subscript_child_filter_expression = function(filterExpression) {
 }
 
 var subscript_child_script_expression = function(scriptExpression, partial) {
-var src = scriptExpression.slice(1, -1);
-  var ast = aesprim.parse(src).body[0].expression;
-  return evaluate(ast, { '@': partial });
+  var exp = scriptExpression.slice(1, -1);
+  return eval_recurse(partial, exp, '$[{{value}}]');
 }
+
+function eval_recurse(partial, src, template) {
+
+  var ast = aesprim.parse(src).body[0].expression;
+  var value = evaluate(ast, { '@': partial.value });
+  var path = template.replace(/\{\{\s*value\s*\}\}/g, value);
+
+  var results = jp.nodes(partial.value, path);
+  results.forEach(function(r) {
+    r.path = partial.path.concat(r.path.slice(1));
+  });
+
+  return results;
+}
+
 
 describe('query', function() {
 
@@ -87,7 +102,7 @@ describe('query', function() {
   it('last book in order via expression', function() {
 //    var results = jp.nodes(data, '$..book[(@.length-1)]');
     /** It kinda sucks to have to eagerly evaluate your subscript expressions, using access to the data to figure out the index of the last item*/
-    var results = jp.nodes(data, '$.store.book[' + (subscript_child_script_expression("(@.length-1)", data.store.book)) + ']');
+    var results = subscript_child_script_expression("(@.length-1)", jp.nodes(data, '$.store.book')[0]);
     assert.deepEqual(results, [ { path: ['$', 'store', 'book', 3], value: data.store.book[3] }]);
   });
 
@@ -173,7 +188,7 @@ describe('query', function() {
 
   it('object subscript wildcard', function() {
 //    var results = jp.query(data, '$.store[*]');
-    var results = jp.query(data, '$.store["book", "biscyle"]'); // Wildcard is for wildcards, not classy cacheable falcor
+    var results = jp.query(data, '$.store["book", "bicycle"]'); // Wildcard is for wildcards, not classy cacheable falcor
     assert.deepEqual(results, [ data.store.book, data.store.bicycle ]);
   });
 
@@ -188,10 +203,11 @@ describe('query', function() {
     assert.deepEqual(results, [ { path: [ '$', 'store', 'book', 0 ], value: data.store.book[0] } ]);
   });
 
-  it('descendant numeric literal gets first element', function() {
-    var results = jp.nodes(data, '$.store.book..0');
-    assert.deepEqual(results, [ { path: [ '$', 'store', 'book', 0 ], value: data.store.book[0] } ]);
-  });
+  /* Nope descendant is same to select all, we are to cachey for it **/
+//  it('descendant numeric literal gets first element', function() {
+//    var results = jp.nodes(data, '$.store.book..0');
+//    assert.deepEqual(results, [ { path: [ '$', 'store', 'book', 0 ], value: data.store.book[0] } ]);
+//  });
 
   it('root element gets us original obj', function() {
     var results = jp.nodes(data, '$');
@@ -214,12 +230,15 @@ describe('query', function() {
   });
 
   it('union of three array slices', function() {
-    var results = jp.query(data, "$.store.book[0:1,1:2,2:3]");
+//    var results = jp.query(data, "$.store.book[0:1,1:2,2:3]");
+    var results = jp.query(data, "$.store.book[0..1,1..2,2..3]");
     assert.deepEqual(results, data.store.book.slice(0,3));
   });
 
   it('slice with step > 1', function() {
-    var results = jp.query(data, "$.store.book[0:4:2]");
+//    var results = jp.query(data, "$.store.book[0:4:2]");
+    var results = jp.query(data, "$.store.book[0...4]");
+    results = slice(results, 0, 4, 2); /** Bring your own slice that supports stepping  */
     assert.deepEqual(results, [ data.store.book[0], data.store.book[2]]);
   });
 
@@ -234,61 +253,67 @@ describe('query', function() {
   it('union of subscript string literal three keys', function() {
     var results = jp.nodes(data, "$.store.book[0]['title','author','price']");
     assert.deepEqual(results, [
-      { path: ['$', 'store', 'book', '0', 'title'], value: data.store.book[0].title },
-      { path: ['$', 'store', 'book', '0', 'author'], value: data.store.book[0].author },
-      { path: ['$', 'store', 'book', '0', 'price'], value: data.store.book[0].price }
+      { path: ['$', 'store', 'book', 0, 'title'], value: data.store.book[0].title },
+      { path: ['$', 'store', 'book', 0, 'author'], value: data.store.book[0].author },
+      { path: ['$', 'store', 'book', 0, 'price'], value: data.store.book[0].price }
     ]);
   });
 
   it('union of subscript integer three keys followed by member-child-identifier', function() {
     var results = jp.nodes(data, "$.store.book[1,2,3]['title']");
     assert.deepEqual(results, [
-      { path: ['$', 'store', 'book', '1', 'title'], value: data.store.book[1].title },
-      { path: ['$', 'store', 'book', '2', 'title'], value: data.store.book[2].title },
-      { path: ['$', 'store', 'book', '3', 'title'], value: data.store.book[3].title }
+      { path: ['$', 'store', 'book', 1, 'title'], value: data.store.book[1].title },
+      { path: ['$', 'store', 'book', 2, 'title'], value: data.store.book[2].title },
+      { path: ['$', 'store', 'book', 3, 'title'], value: data.store.book[3].title }
     ]);
   });
 
   it('union of subscript integer three keys followed by union of subscript string literal three keys', function() {
     var results = jp.nodes(data, "$.store.book[0,1,2,3]['title','author','price']");
     assert.deepEqual(results, [
-      { path: ['$', 'store', 'book', '0', 'title'], value: data.store.book[0].title },
-      { path: ['$', 'store', 'book', '0', 'author'], value: data.store.book[0].author },
-      { path: ['$', 'store', 'book', '0', 'price'], value: data.store.book[0].price },
-      { path: ['$', 'store', 'book', '1', 'title'], value: data.store.book[1].title },
-      { path: ['$', 'store', 'book', '1', 'author'], value: data.store.book[1].author },
-      { path: ['$', 'store', 'book', '1', 'price'], value: data.store.book[1].price },
-      { path: ['$', 'store', 'book', '2', 'title'], value: data.store.book[2].title },
-      { path: ['$', 'store', 'book', '2', 'author'], value: data.store.book[2].author },
-      { path: ['$', 'store', 'book', '2', 'price'], value: data.store.book[2].price },
-      { path: ['$', 'store', 'book', '3', 'title'], value: data.store.book[3].title },
-      { path: ['$', 'store', 'book', '3', 'author'], value: data.store.book[3].author },
-      { path: ['$', 'store', 'book', '3', 'price'], value: data.store.book[3].price }
+      { path: ['$', 'store', 'book', 0, 'title'], value: data.store.book[0].title },
+      { path: ['$', 'store', 'book', 0, 'author'], value: data.store.book[0].author },
+      { path: ['$', 'store', 'book', 0, 'price'], value: data.store.book[0].price },
+      { path: ['$', 'store', 'book', 1, 'title'], value: data.store.book[1].title },
+      { path: ['$', 'store', 'book', 1, 'author'], value: data.store.book[1].author },
+      { path: ['$', 'store', 'book', 1, 'price'], value: data.store.book[1].price },
+      { path: ['$', 'store', 'book', 2, 'title'], value: data.store.book[2].title },
+      { path: ['$', 'store', 'book', 2, 'author'], value: data.store.book[2].author },
+      { path: ['$', 'store', 'book', 2, 'price'], value: data.store.book[2].price },
+      { path: ['$', 'store', 'book', 3, 'title'], value: data.store.book[3].title },
+      { path: ['$', 'store', 'book', 3, 'author'], value: data.store.book[3].author },
+      { path: ['$', 'store', 'book', 3, 'price'], value: data.store.book[3].price }
     ]);
   });
 
   it('union of subscript 4 array slices followed by union of subscript string literal three keys', function() {
-    var results = jp.nodes(data, "$.store.book[0:1,1:2,2:3,3:4]['title','author','price']");
+//    var results = jp.nodes(data, "$.store.book[0:1,1:2,2:3,3:4]['title','author','price']");
+    var results = jp.nodes(data, "$.store.book[0..1,1..2,2..3,3..4]['title','author','price']");
     assert.deepEqual(results, [
-      { path: ['$', 'store', 'book', '0', 'title'], value: data.store.book[0].title },
-      { path: ['$', 'store', 'book', '0', 'author'], value: data.store.book[0].author },
-      { path: ['$', 'store', 'book', '0', 'price'], value: data.store.book[0].price },
-      { path: ['$', 'store', 'book', '1', 'title'], value: data.store.book[1].title },
-      { path: ['$', 'store', 'book', '1', 'author'], value: data.store.book[1].author },
-      { path: ['$', 'store', 'book', '1', 'price'], value: data.store.book[1].price },
-      { path: ['$', 'store', 'book', '2', 'title'], value: data.store.book[2].title },
-      { path: ['$', 'store', 'book', '2', 'author'], value: data.store.book[2].author },
-      { path: ['$', 'store', 'book', '2', 'price'], value: data.store.book[2].price },
-      { path: ['$', 'store', 'book', '3', 'title'], value: data.store.book[3].title },
-      { path: ['$', 'store', 'book', '3', 'author'], value: data.store.book[3].author },
-      { path: ['$', 'store', 'book', '3', 'price'], value: data.store.book[3].price }
+      { path: ['$', 'store', 'book', 0, 'title'], value: data.store.book[0].title },
+      { path: ['$', 'store', 'book', 0, 'author'], value: data.store.book[0].author },
+      { path: ['$', 'store', 'book', 0, 'price'], value: data.store.book[0].price },
+      { path: ['$', 'store', 'book', 1, 'title'], value: data.store.book[1].title },
+      { path: ['$', 'store', 'book', 1, 'author'], value: data.store.book[1].author },
+      { path: ['$', 'store', 'book', 1, 'price'], value: data.store.book[1].price },
+      { path: ['$', 'store', 'book', 2, 'title'], value: data.store.book[2].title },
+      { path: ['$', 'store', 'book', 2, 'author'], value: data.store.book[2].author },
+      { path: ['$', 'store', 'book', 2, 'price'], value: data.store.book[2].price },
+      { path: ['$', 'store', 'book', 3, 'title'], value: data.store.book[3].title },
+      { path: ['$', 'store', 'book', 3, 'author'], value: data.store.book[3].author },
+      { path: ['$', 'store', 'book', 3, 'price'], value: data.store.book[3].price }
     ]);
   });
 
 
   it('nested parentheses eval', function() {
-    var pathExpression = '$..book[?( @.price && (@.price + 20 || false) )]'
-    var results = jp.query(data, pathExpression);
+//    var pathExpression = '$..book[?( @.price && (@.price + 20 || false) )]'
+//    var results = jp.query(data, pathExpression);
+    var pathExpression = '?( @.price && (@.price + 20 || false) )';
+    var results = jp.nodes(data, '$.store.book[0...4]');
+    passable = subscript_child_filter_expression(pathExpression);
+    console.log(passable.toString());
+    results = results.filter(passable).map(function(node) { return node.value;});
     assert.deepEqual(results, data.store.book);
   });
 
@@ -303,17 +328,22 @@ describe('query', function() {
     }
   });
 
+  /**
+   * jsonpath desendant semantics applies the selector to the root node before starting to descend. falcorpath syntax doesn't produce subscript-descendant or member-descendant expressions
+   */
   it('descendant subscript numeric literal', function() {
     var data = [ 0, [ 1, 2, 3 ], [ 4, 5, 6 ] ];
-    var results = jp.query(data, '$..[0]');
-    assert.deepEqual(results, [ 0, 1, 4 ]);
+//    var results = jp.query(data, '$..[0]');
+    var results = jp.query(data, '[0...3][0]');
+//    assert.deepEqual(results, [ 0, 1, 4 ]);
+    assert.deepEqual(results, [ 1, 4 ]);
   });
 
-  it('descendant subscript numeric literal', function() {
-    var data = [ 0, 1, [ 2, 3, 4 ], [ 5, 6, 7, [ 8, 9 , 10 ] ] ];
-    var results = jp.query(data, '$..[0,1]');
-    assert.deepEqual(results, [ 0, 1, 2, 3, 5, 6, 8, 9 ]);
-  });
+//  it('descendant subscript numeric literal', function() {
+//    var data = [ 0, 1, [ 2, 3, 4 ], [ 5, 6, 7, [ 8, 9 , 10 ] ] ];
+//    var results = jp.query(data, '$..[0,1]');
+//    assert.deepEqual(results, [ 0, 1, 2, 3, 5, 6, 8, 9 ]);
+//  });
 
   it('throws for no input', function() {
     assert.throws(function() { jp.query() }, /needs to be an object/);

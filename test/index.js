@@ -3,7 +3,7 @@ var _parse = require('../index.js');
 var assert = require('chai').assert;
 var expect = require('chai').expect;
 var jp = require('jsonpath');
-var helpers = require('./helpers')
+var helpers = require('./../lib/helpers')
 
 /**
  * Test data structure to hold the original path string and the ast
@@ -140,7 +140,14 @@ describe("#parse", function() {
     it('Ranges can have smaller "to" values than "from" values. Technically this is illegal, but it is not the parser\'s job to enforce this restriction.', function() {
         var path = parse("genreLists[3...2][3..2]['name']")
 //        pathsEqual(path, ["genreLists", {from: 3, length: 2-3}, {from:3, to: 2}, "name"]);
-        pathsEqual(path, ["genreLists", [3, 2-3].join(':'), [3, 2].join(':'), "name"]);
+      /** from length concepts doesn't exist in jsonpath, only slices with stepping capability */
+//      pathsEqual(path, ["genreLists", [3, -1].join(':'), [3, 2].join(':'), "name"]);
+      /** pathequals logic doesn't compensate for jsonpath not calculating length - from */
+      var rightPath = ["genreLists", [3, -1].join(':'), [3, 2].join(':'), "name"];
+      assert.equal( JSON.stringify(helpers.falcorPath(path.ast)), JSON.stringify(rightPath));
+      path.original = "genreLists[3...-1][3..2]['name']";
+      var jpAST = helpers.fixGaps(path);
+      assert.deepEqual(path.ast, jpAST);
     });
 
     it('should reject Arrays inside of indexers', function() {
@@ -175,7 +182,7 @@ describe("#parse", function() {
 
     it('should reject numbers as identifiers', function() {
         expect(function() {
-            parse("234[rating]")
+            parse("234['rating']")
         }).to.throw("Invalid identifier found.");
     });
        
