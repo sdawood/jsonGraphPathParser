@@ -11,5 +11,7 @@
     "pegjs": "^0.8.0",
     "pegjs-util": "^1.0.3"
   },
-  "dependencies": {}
+  "dependencies": {
+    "lodash": "^3.8.0"
+  }
 }
