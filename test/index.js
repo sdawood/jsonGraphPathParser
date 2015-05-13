@@ -86,7 +86,10 @@ describe("#parse", function() {
 
     it('should parse inclusive and exclusive ranges in indexers. Inclusive ranges should use the "to" field, and exclusive ranges should use the "length" field.', function() {
         var path = parse("genreLists[0..1][0...1].name");
-        pathsEqual(path, ["genreLists", [0, 1].join(':'), [0, 1-0].join(':'), "name"]);
+        var rightPath = ["genreLists", [0, 1].join(':'), [0, 1].join(':'), "name"];
+        assert.equal( JSON.stringify(helpers.falcorPath(path.ast)), JSON.stringify(rightPath));
+        var jpAST = helpers.fixGaps(path);
+        assert.deepEqual(path.ast, jpAST);
     });     
 
     it('Should parse null, true, false, and undefined keys and should not coerce it into a string', function() {
@@ -141,14 +144,14 @@ describe("#parse", function() {
     it('Ranges can have smaller "to" values than "from" values. Technically this is illegal, but it is not the parser\'s job to enforce this restriction.', function() {
         var path = parse("genreLists[3...2][3..2]['name']")
 //        pathsEqual(path, ["genreLists", {from: 3, length: 2-3}, {from:3, to: 2}, "name"]);
-      /** from length concepts doesn't exist in jsonpath, only slices with stepping capability */
-//      pathsEqual(path, ["genreLists", [3, -1].join(':'), [3, 2].join(':'), "name"]);
-      /** pathequals logic doesn't compensate for jsonpath not calculating length - from */
-      var rightPath = ["genreLists", [3, -1].join(':'), [3, 2].join(':'), "name"];
-      assert.equal( JSON.stringify(helpers.falcorPath(path.ast)), JSON.stringify(rightPath));
-      path.original = "genreLists[3...-1][3..2]['name']";
-      var jpAST = helpers.fixGaps(path);
-      assert.deepEqual(path.ast, jpAST);
+        /** from ... length concepts doesn't exist in jsonpath, only slices with stepping capability */
+  //      pathsEqual(path, ["genreLists", [3, -1].join(':'), [3, 2].join(':'), "name"]);
+        /** pathequals logic doesn't compensate for jsonpath not calculating length - from */
+        var rightPath = ["genreLists", [3, 0].join(':'), [3, 2].join(':'), "name"];
+        assert.equal( JSON.stringify(helpers.falcorPath(path.ast)), JSON.stringify(rightPath));
+        path.original = "genreLists[3:0][3:2]['name']"; // For the eyes of jsonpath.parse
+        var jpAST = helpers.fixGaps(path);
+        assert.deepEqual(path.ast, jpAST);
     });
 
     it('should reject Arrays inside of indexers', function() {

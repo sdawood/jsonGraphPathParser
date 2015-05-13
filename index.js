@@ -14,5 +14,5 @@
  * permissions and limitations under the License.
  */
 
-var parse = require('./lib/parser');
-module.exports = parse;
+var parser = require('./lib/parser');
+module.exports = parser.parse;
